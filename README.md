@@ -1,417 +1,350 @@
-#include<stdlib.h>
 #include<stdio.h>
-#include<iostream.h>
-#define NULL 0
-
-
-typedef struct BookInfo{  /////图书结构
- int b_Code;   ////图书编号
- char b_Name[20]; /////名称
- int b_Total;  /////总数
- int b_Out;  ///借出数
- BookInfo* nextbook;   //////下一类图书
-}BookInfo;
-
-
-typedef struct MemberInfo{  ///会员结构
- long m_Code;  /////会员编号
- char m_Name[20];  ////会员名字
- int l_Codes[6];  /////以借书的编号,最多5
- MemberInfo* nextmember; ////下一会员
-}MemberInfo;
-
-
-typedef struct System{  ///管理系统结构
- BookInfo* BI;    
- MemberInfo* MI;
- int BookTotal;  ////图书类库存量
- int MemberTota; /////会员数量
-}System;
-
-System* InitSystem();/////
-void AddBook(System*);////增加图书
-BookInfo* SearchBook(System*,int);////查询图书信息
-
-void DelBook(System*);/////删除图书
-
-void BrrowBook(System*);///////借书处理
-void TurnBackBook(System*);////还书处理
-
-void AddMember(System*);/////添加会员
-void DelMember(System*);////删除会员
-MemberInfo* SearchMember(System*,int);/////查询会员信息
-void StoreData(System*);
-void LoadData(System*);
-void ExitSystem();
-void main()
+#include<stdlib.h>
+#include<iostream>
+using namespace std;
+#define Max 9999999
+typedef struct {
+	int weight;
+}Arc,**Adj;
+typedef struct{
+	int *vex;
+	Adj arcs;
+	int vexnum;
+	int arcnum;
+}MGraph;                //图
+typedef struct {
+	int Destination;
+	int nexthop;
+	int length;
+}RoutingTable,**RT;      //路由表
+RT Rout;
+int NETWORK_SIZE;
+double PROBABILITY_OF_EAGE;
+MGraph G;
+int flag;
+void initial()                                               //图分配空间
 {
- System* S=InitSystem();
- int sel;
- do{
-  cout<<"\n\t\t\t\t图书管理系统"<<endl;
-  cout<<"\t\t\t******************************"<<endl;
-  cout<<"\t\t\t******************************"<<endl;
-  cout<<"\t\t\t 1.增加图书.\t 2.查询图书.\n\t\t\t 3.删除图书.\t 4.借书处理.\n\t\t\t 5.还书处理.\n\t\t\t 6.添加会员.\t 7.删除会员.\n\t\t\t 8.查询会员.\t 9.载入数据.\n\t\t\t10.保存数据.\t11.退出程序.\n";
-  cout<<"\t\t\t******************************"<<endl;
-  cout<<"\t\t\t******************************"<<endl;
-  cout<<"请选择:";
-  do{
-   cin>>sel;
-   if(sel>=1&&sel<=11)break;
-   cout<<"选择错误!\n重新输入:"<<endl;
-  }while(1);
-  switch(sel){
-  case 1:AddBook(S);break;
-  case 2:SearchBook(S,-1);break;
-  case 3:DelBook(S);break;
-  case 4:BrrowBook(S);;break;
-  case 5:TurnBackBook(S);break;
-  case 6:AddMember(S);break;
-  case 7:DelMember(S);break;
-  case 8:SearchMember(S,-1);break;
-  case 9:LoadData(S);break;
-  case 10:StoreData(S);break;
-  default:ExitSystem();
-  }
- }while(1);
+	G.vexnum=NETWORK_SIZE;
+	if(!(G.vex=(int *)malloc((NETWORK_SIZE + 1)*sizeof(int *))))
+	{
+		cout << "邻接矩阵内存分配错误" << endl;
+		exit(0);
+	}
+	if (!(G.arcs= (Adj)malloc(sizeof(int *) * (NETWORK_SIZE + 1))))
+	{
+		cout << "邻接矩阵内存分配错误" << endl;
+		exit(0);
+	}
+	for(int i=0;i<G.vexnum;i++)
+		G.arcs[i]=(Arc *)malloc(sizeof(int)*G.vexnum);
+	for(int i=0;i<G.vexnum;i++)
+		G.vex[i]=i+1;
+	G.arcnum=0;
 }
-System* InitSystem()
+void generateRandomNetwork() {                              //构建网络
+	int i, j;
+	double probability = 0.0;
+	int count=0;
+	for (i = 0; i <G.vexnum; i++)
+		for (j = 0; j <G.vexnum;j++)
+			G.arcs[i][j].weight=Max;
+	for (i = 0; i < NETWORK_SIZE; i++)
+	{
+		for (j = 0; j < NETWORK_SIZE; j++)
+		{
+			probability = (rand() % NETWORK_SIZE) / (double)NETWORK_SIZE*2;//生成一个随机数
+			if (i!=j&&probability < PROBABILITY_OF_EAGE&&G.arcs[i][j].weight==Max)//如果此随机数小于连边概率，则在此（i，j)节点对之间添加一条边，否则不添加边。
+			{
+				G.arcnum++;
+				 G.arcs[i][j].weight =1;
+				 G.arcs[j][i].weight=G.arcs[i][j].weight;
+			}
+		}
+	}
+}
+void printf(){
+	int i,j,n=0;
+	printf("                                                                            已成功生成网络 正在打印.......\n                                                                                ");
+	for(i=0;i<G.vexnum;i++){
+		if(G.vex[i]<10)
+		printf("%d    ",G.vex[i]);
+		else 
+			printf("%d   ",G.vex[i]);
+	}
+		printf("\n");
+	for(i=0;i<G.vexnum;i++){
+		if(G.vex[i]<10)
+		printf("                                                                            %d   ",G.vex[i]);
+		else
+        printf("                                                                            %d  ",G.vex[i]);
+		for(j=0;j<G.vexnum;j++)
+			{
+				if(G.arcs[i][j].weight==Max) printf("∞   ");
+				else{
+					n++;
+				printf("%d    ",G.arcs[i][j].weight);
+				}
+				if(j==G.vexnum-1) printf("\n");
+		}
+	}
+	G.arcnum=n/2;
+}
+void creat(){
+	printf("请输入构建的网规模:");
+	scanf("%d",&NETWORK_SIZE);
+	T:printf("请输入网络连边概率(0~1任意小数):");
+	scanf("%lf",&PROBABILITY_OF_EAGE);
+	if(PROBABILITY_OF_EAGE<0||PROBABILITY_OF_EAGE>1) {
+		printf("请输入正确概率\n");
+		goto T;
+	}
+	initial();
+    generateRandomNetwork();
+	printf();
+	Rout=(RT)malloc(sizeof(int)*(1+G.vexnum));
+	for(int j=0;j<G.vexnum;j++)
+		Rout[j]=(RoutingTable *)malloc(sizeof(int)*(1+G.vexnum));
+}
+void Dijkstra(int v0,int path[],int distance[]){
+	int n=G.vexnum;
+	int *S=(int *)malloc(sizeof(int)*n);
+	int minDis,i,j,u=0;
+	for(i=0;i<n;i++)
+	{
+		distance[i]=G.arcs[v0][i].weight;
+		S[i]=0;
+		if(i!=v0&&distance[i]<Max)
+		         path[i]=v0;
+		else path[i]=-1;
+	}
+	S[v0]=1;
+	for(i=1;i<n;i++)
+	{
+		minDis=Max;
+		for(j=0;j<n;j++)
+			if(S[j]==0&distance[j]<minDis)
+			{
+				u=j;
+				minDis=distance[j];
+			}
+			
+			S[u]=1;
+			for(j=0;j<n;j++)
+				if(S[j]==0&&G.arcs[u][j].weight<Max&&distance[u]+G.arcs[u][j].weight<distance[j])
+			{
+				    distance[j]=distance[u]+G.arcs[u][j].weight;
+					path[j]=u;
+			}
+	}
+	for(i=0;i<n;i++)
+	{
+		if(G.vex[i]==G.vex[v0]) continue;
+		j=i;
+		while(path[j]!=v0)
+		{
+			j=path[j];
+			if(j==-1) break;
+		}
+		Rout[v0][i].Destination=G.vex[i];
+		Rout[v0][i].nexthop=G.vex[j];
+	}
+	for(j=0;j<G.vexnum;j++)
+		Rout[v0][j].length=distance[j];
+	}
+void putList()
 {
- System* S=(System*)malloc(sizeof(System));
- S->BI=(BookInfo*)malloc(sizeof(BookInfo));
- S->BookTotal=0;
- S->BI->nextbook=NULL;
- S->MI=(MemberInfo*)malloc(sizeof(MemberInfo));
- S->MemberTota=0;
- S->MI->nextmember=NULL;
- return S;
+	int i,j,flag=0,z;
+	int *path,*distance;
+	path=(int *)malloc(sizeof(int)*G.vexnum);
+	printf("\n请输入要查询的路由器编号:");
+	scanf("%d",&i);
+	for(z=0;z<G.vexnum;z++)
+		if(G.vex[z]==i) 
+			{
+				flag=1;
+				break;
+		}
+	if(flag==0) {
+		printf("                                                                            !!!您查询的路由不存在!!!\n");
+		return ;
+	}
+	distance=(int *)malloc(sizeof(int)*G.vexnum);
+	Dijkstra(z,path,distance);
+	printf("路由表打印中......\n");
+	printf("                                                                            ~~~目标路由      下一跳路由~~~\n");
+	for(j=0;j<G.vexnum;j++){
+		if(G.vex[j]==G.vex[z]) 
+			continue;
+		if(Rout[z][j].nexthop!=0&&Rout[z][j].nexthop>0)
+		printf("                                                                                   %d            %d\n",Rout[z][j].Destination,Rout[z][j].nexthop);
+	}
+		for(j=0;j<G.vexnum;j++){
+			if(G.vex[j]==G.vex[z]) continue;
+			if(Rout[z][j].length>=16) Rout[z][j].length=Max;
+			if(Rout[z][j].length==Max) printf("                                                                                到路由%d不可达\n",Rout[z][j].Destination);
+		else printf("                                                                                到路由%d最短路径长度为:%d\n",Rout[z][j].Destination,Rout[z][j].length);
+		}
+		}
+void deletpoint(){
+	printf("目前有%d个路由,请输入合法路由数\n",G.vexnum);
+	int x,y;
+	printf("请输入您要删除的路由数:");
+	scanf("%d",&x);
+	if(x>0&&x<=G.vexnum){
+	for(y=0;y<x;y++)
+	{
+	printf("\n请输入要删除的路由编号:");
+	int n,flag=0,i,j,k;
+	scanf("%d",&n);
+	for(i=0;i<G.vexnum;i++)
+		if(G.vex[i]==n){
+			flag=1;
+			break;
+		}
+	if(flag==0)
+	{
+		printf("                                                                             !!!您要删除的路由不存在!!!\n");
+			return ;
+	}
+	k=i;
+
+	for(j=0;j<G.vexnum;j++)
+		for(i=k;i<G.vexnum-1;i++)
+		G.arcs[j][i].weight=G.arcs[j][i+1].weight;
+	for(i=k;i<G.vexnum-1;i++)
+		for(j=0;j<G.vexnum;j++)
+			G.arcs[i][j].weight=G.arcs[i+1][j].weight;
+
+	for(i=k;i<G.vexnum;i++)
+	{
+		G.vex[i]=G.vex[i+1];
+	}
+
+	G.vexnum--;
+	}
+	printf("删除成功\n");
+	}
+	else printf("目前有%d个路由,请输入合法路由数\n",G.vexnum);
 }
-void AddBook(System* S)
-{
- int Tempcode;
- char sel;
- BookInfo* p=S->BI;
- BookInfo* t;
- BookInfo* m;
- int num;
- do{
-  cout<<"输入图书编号:";
-  cin>>Tempcode;
-  if(m=SearchBook(S,Tempcode)){
-   cout<<"这类书以有库存.\n输入图书的入库量:"<<endl;
-   cin>>num;
-   m->b_Total+=num;
-  }
-  else{
-   t=(BookInfo*)malloc(sizeof(BookInfo));
-   t->b_Code=Tempcode;
-   cout<<"输入图书的名称:";
-   cin>>t->b_Name;
-   cout<<"输入图书的入库量:";
-   cin>>t->b_Total;
-   t->b_Out=0;
-   t->nextbook=p->nextbook;
-   p->nextbook=t;
-   S->BookTotal++;
-  }
-  cout<<"添加完毕!"<<endl;
-  cout<<"还要添加吗?(Y/N)";
-  cin>>sel;
-  if(sel=='n'||sel=='N'){
-   cout<<"结束添加"<<endl;
-   return;
-  }
- }while(1);
+void deletarc(){
+	printf("目前网络有%d条边,请输入合法条数\n",G.arcnum);
+	printf("请输入您要删除的边数:");
+	int x;
+	scanf("%d",&x);
+	if(x>0&&x<G.arcnum){
+	for(int y=0;y<x;y++)
+	{
+	printf("\n请输入要删除的边的前后路由(格式a b):");
+	int a,b,i,flag1=0,flag2=0,j;
+	scanf("%d %d",&a,&b);
+	for(i=0;i<G.vexnum;i++)
+		if(G.vex[i]==a){
+			flag1=1;
+			break;
+		}
+		if(flag1==0){
+			printf("                                                                            !!!您输入的%d号路由器不存在!!!\n",a);
+			return ;
+		}
+    for(j=0;j<G.vexnum;j++)
+		if(G.vex[j]==b){
+			flag2=1;
+			break;
+		}
+		if(flag2==0){
+			printf("                                                                            ！！！您输入的%d号路由器不存在!!!\n",b);
+			return ;
+		}
+	G.arcs[i][j].weight=Max;
+	G.arcs[j][i].weight=Max;
+	G.arcnum--;
+	}
+	printf("删除成功\n");
+	}
+	else printf("目前网络有%d条边,请输入合法条数\n",G.arcnum);
 }
-BookInfo* SearchBook(System* S,int code){
- BookInfo* bi=S->BI->nextbook;
- int bookcode;
- if(code==-1){
-  cout<<"请输入要查询的图书编号:";
-  cin>>bookcode;
- }
- else bookcode=code;
- while(bi&&bi->b_Code!=bookcode)bi=bi->nextbook;
- if(code==-1){
-  if(!bi)cout<<"没找到你所要的图书."<<endl;
-  else {
-   cout<<"图书编号为:"<<bi->b_Code<<endl;
-   cout<<"图书名称为:"<<bi->b_Name<<endl;
-   cout<<"图书库存量为:"<<bi->b_Total<<endl;
-   cout<<"图书借出量为:"<<bi->b_Out<<endl;
-  }
- }
- return bi;
+void addarc(){
+	printf("目前网络有%d条边,请输入合法条数\n",G.arcnum);
+	printf("请输入您要添加的边数:");
+	int x;
+	scanf("%d",&x);
+	if((x+G.arcnum)<=(G.vexnum*(G.vexnum-1)/2)){
+	for(int y=0;y<x;y++)
+	{
+	printf("\n请输入要添加的边的前后路由(格式a b):");
+	int a,b,i,j,flag1=0,flag2=0;
+	scanf("%d %d",&a,&b);
+	for(i=0;i<G.vexnum;i++)
+		if(G.vex[i]==a){
+			flag1=1;
+			break;
+		}
+		if(flag1==0){                                                                                
+			printf("                                                                            ！！！！您输入的%d号路由器不存在！！！！\n",a);
+			return ;
+		}
+    for(j=0;j<G.vexnum;j++)
+		if(G.vex[j]==b){
+			flag2=1;
+			break;
+		}
+		if(flag2==0){
+			printf("                                                                            ！！！您输入的%d号路由器不存在！！！\n",b);
+			return ;
+		}
+	G.arcs[i][j].weight=1;
+	G.arcs[j][i].weight=1;
+	G.arcnum++;
+	}
+	printf("添加成功");
+	}
+	else printf("目前网络有%d条边,请输入合法条数\n",G.arcnum);
 }
-void DelBook(System* S){
- BookInfo* bi;
- BookInfo* pl=S->BI;
- MemberInfo* memi;
- char sel;
- int tempcode;
- int i;
- do{
-  pl=S->BI;
-  bi=pl->nextbook;
-  memi=S->MI->nextmember;
-  cout<<"请输入要删除的图书的编号:";
- cin>>tempcode;
-  while(bi){
-   if(bi->b_Code==tempcode)break;
-   pl=bi;
-   bi=bi->nextbook;
-  }
-  if(bi==0)cout<<"没有找到要删除的图书"<<endl;
-  else{
-   pl->nextbook=bi->nextbook;
-   S->BookTotal--;
-   while(memi){
-    for(i=1;i<=memi->l_Codes[0];i++){
-     if(memi->l_Codes[i]==tempcode)break;
-    }
-    if(i<=memi->l_Codes[0]){
-     for(;i<memi->l_Codes[0];i++)memi->l_Codes[i]=memi->l_Codes[i+1];
-     memi->l_Codes[0]--;
-    }
-    memi=memi->nextmember;
-   }
-   free(bi);
-  }
-  cout<<"还有图书要删除吗?(Y/N)";
-  cin>>sel;
-  if(sel=='N'||sel=='n'){
-   cout<<"删除图书结束"<<endl;
-   return;
-  }
- }while(1);
+
+void Rush(){
+	Q1:printf("                                                                               **网络路由更新**\n\n                                                                                0.返回\n\n                                                                                1.删除边\n\n                                                                                2.删除点\n\n                                                                                3.添加边\n\n                                                                                4.路由表查询\n\n                                                                                5.显示网络\n");
+    Q:printf("请输入合法选项:");
+	int n;
+	scanf("%d",&n);
+	if(n!=0&&n!=1&&n!=2&&n!=3&&n!=4&&n!=5)
+		goto Q;
+	switch(n){
+	case 1:deletarc();break;
+	case 2:deletpoint();break;
+	case 3:addarc();break;
+	case 4:putList();break;
+	case 5:printf();break;
+	case 0:return ;break;
+	}
+	
+	goto Q1;
 }
-void BrrowBook(System* S)
-{
- BookInfo* bi=S->BI->nextbook;
- BookInfo* p;
- char sel;
- int memcode;
- MemberInfo* mp;
- int tempcode;
- do{
-  cout<<"输入要借出的书号:";
-  cin>>tempcode;
-  p=SearchBook(S,tempcode);
-  if(!p){
-   cout<<"没有找到要借出的图书."<<endl;
-  }
-  else{
-   cout<<"此书的现存量为"<<(p->b_Total-p->b_Out)<<endl;
-   if(!(p->b_Total-p->b_Out))cout<<"没有足够的书了,外借失败."<<endl;
-   else{
-    cout<<"请输入会员编号:";
-    cin>>memcode;
-    mp=SearchMember(S,memcode); 
-    if(!mp)cout<<"会员编号输入错误,外借失败"<<endl;
-    else{
-     if(mp->l_Codes[0]==5)cout<<"借书量不能超过5本";
-     else{
-      p->b_Out++;
-      mp->l_Codes[++mp->l_Codes[0]]=tempcode;
-      cout<<"外借成功."<<endl;
-     }
-    }
-   }
-  }
-  cout<<"\n还有图书要借出吗?(Y/N)";
-  cin>>sel;
-  if(sel=='N'||sel=='n'){
-   cout<<"外借操作结束."<<endl;
-   return;
-  }
- }while(1);
+		
+void menu(){
+	Z:printf("                                                                                *******欢迎来到本系统*******\n                                                                                     请根据菜单选择功能\n");
+	printf("                                                                                0.退出\n\n                                                                                1.构建广域网\n\n                                                                                2.查询路由表\n\n                                                                                3.路由更新\n\n");
+	L:printf("请输入合法选项:");
+	int n;
+	scanf("%d",&n);
+	if(n==0||n==1||n==2||n==3){
+		if((n!=1&&n!=0)&&flag==0) {
+			printf("                                                                  !!!!!!您还未构建广域网，不可进行其他操作!!!!!!\n");
+			goto L;
+		}
+	switch(n){
+	case 1:flag=1;creat();break;
+    case 2:putList();break;
+	case 3:Rush();break;
+	case 0:exit(0);
+	}
+	}
+	else goto L;
+	printf("\n返回中......\n");
+	goto Z;	
+
 }
-void TurnBackBook(System* S)
-{
- BookInfo* bi=S->BI->nextbook;
- BookInfo* p;
- MemberInfo* mp;
- int membercode;
- int tempcode;
- int i;
- char sel;
- do{
-  cout<<"输入归还书号:";
-  cin>>tempcode;
-  p=SearchBook(S,tempcode);
-  if(!p){
-   cout<<"书号输入错误."<<endl;
-  }
-  else{
-   cout<<"此书的现存量为"<<(p->b_Total-p->b_Out)<<endl;
-   cout<<"请输入会员编号:";
-   cin>>membercode;
-   if(!(mp=SearchMember(S,membercode)))cout<<"会员编号输入错误,归还失败"<<endl;
-   else{
-    p->b_Out--;
-    for(i=1;i<=mp->l_Codes[0];i++){
-     if(mp->l_Codes[i]==tempcode)break;
-    }
-    while(i<mp->l_Codes[0]){
-     mp->l_Codes[i]=mp->l_Codes[i+1];
-     i++;
-    }
-    mp->l_Codes[0]--;
-    cout<<"归还成功."<<endl;
-   }
-  }
-  cout<<"还有要归还的图书吗?(Y/N)";
-  cin>>sel;
-  if(sel=='N'||sel=='n'){
-   cout<<"归还结束."<<endl;
-   return;
-  }
- }while(1);
+int main(){
+	menu();
+	return 0;
 }
-void AddMember(System* S)
-{
- int Tempcode;
- char sel;
- MemberInfo* p=S->MI;
- MemberInfo* t;
- do{
-  cout<<"输入会员编号:";
-  cin>>Tempcode;
-  t=(MemberInfo*)malloc(sizeof(MemberInfo));
-  t->m_Code=Tempcode;
-  cout<<"输入会员姓名:";
-  cin>>t->m_Name;
-  t->l_Codes[0]=0;
-  t->nextmember=p->nextmember;
-  p->nextmember=t;
-  S->MemberTota++;
-  cout<<"添加完毕!"<<endl;
-  cout<<"还要添加吗?(Y/N)";
-  cin>>sel;
-  if(sel=='n'||sel=='N'){
-   cout<<"结束添加"<<endl;
-   return;
-  }
- }while(1);
-}
-MemberInfo* SearchMember(System* S,int code)
-{
- MemberInfo* bi=S->MI->nextmember;
- int membercode;
- int i;
- if(code==-1){
-  cout<<"请输入要查询的会员编号:";
-  cin>>membercode;
- }
- else membercode=code;
- while(bi&&bi->m_Code!=membercode)bi=bi->nextmember;
- if(code==-1){
-  if(!bi)cout<<"没找到指定会员."<<endl;
-  else {
-   cout<<"会员编号为:"<<bi->m_Code<<endl;
-   cout<<"名称为:"<<bi->m_Name<<endl;
-   cout<<"已借的图书有:"<<bi->l_Codes[0]<<"本."<<endl;
-   for(i=1;i<=bi->l_Codes[0];i++)
-    cout<<bi->l_Codes[i]<<' ';
-   cout<<endl;
-  }
- }
- return bi;
-}
-void DelMember(System* S)
-{
- MemberInfo* bi;
- MemberInfo* pl;
- BookInfo* book;
- char sel;
- int i;
- int tempcode;
- do{
-  bi=S->MI->nextmember;
-  pl=S->MI;
-  cout<<"请输入要删除的会员的编号:";
-  cin>>tempcode;
-  while(bi){
-   if(bi->m_Code==tempcode)break;
-   pl=bi;
-   bi=bi->nextmember;
-  }
-  if(!bi)cout<<"没有找到要删除的会员编号.";
-  else{
-   pl->nextmember=bi->nextmember;
-   S->MemberTota--;
-   for(i=1;i<=bi->l_Codes[0];i++){
-    if(!(book=SearchBook(S,bi->l_Codes[i]))){
-     cout<<"删除会员出错!"<<endl;
-    }
-    else{
-     book->b_Out--;
-     book->b_Total--;
-    }
-   }
-   free(bi);
-  }
-  cout<<"还有会员要删除吗?(Y/N)";
-  cin>>sel;
-  if(sel=='N'||sel=='n'){
-   cout<<"删除会员结束"<<endl;
-   return;
-  }
- }while(1);
-}
-void StoreData(System* S){
- FILE* fp;
- BookInfo* bi=S->BI->nextbook;
- if(!(fp=fopen("BookSys","wb"))){
-  cout<<"打开文件BookSys失败!"<<endl;
-  exit(0);
- }
- fwrite(&(S->BookTotal),sizeof(int),1,fp);
- while(bi){
-  fwrite(bi,sizeof(BookInfo),1,fp);
- bi=bi->nextbook;
- }
- MemberInfo* mi=S->MI->nextmember;
- fwrite(&(S->MemberTota),sizeof(int),1,fp);
- while(mi){
-  fwrite(mi,sizeof(MemberInfo),1,fp);
-  mi=mi->nextmember;
- }
- fclose(fp);
-}
-void LoadData(System* S){
- FILE* fp;
- if(!(fp=fopen("BookSys","rb"))){
-  cout<<"打开文件BookSys失败"<<endl;
-  exit(0);
- }
- BookInfo* bi=S->BI;
- BookInfo* tempbi;
- fread(&(S->BookTotal),sizeof(int),1,fp);
- for(int i=1;i<=S->BookTotal;i++){
- tempbi=(BookInfo*)malloc(sizeof(BookInfo));
-  fread(tempbi,sizeof(BookInfo),1,fp);
-  bi->nextbook=tempbi;
- bi=tempbi;
- }
- bi->nextbook=NULL;
- MemberInfo* mi=S->MI;
- MemberInfo* tempmi;
- fread(&(S->MemberTota),sizeof(int),1,fp);
- for(i=1;i<=S->MemberTota;i++){
-  tempmi=(MemberInfo*)malloc(sizeof(MemberInfo));
-  fread(tempmi,sizeof(MemberInfo),1,fp);
-  mi->nextmember=tempmi;
-  mi=tempmi;
- }
- mi->nextmember=NULL;
- fclose(fp);
-}
-void ExitSystem(){
- char select;
- cout<<"警告: 程序结束后未存储的数据将消失."<<endl;
- cout<<"确定要退出吗?(Y/N)";
- cin>>select;
- if(select=='y'||select=='Y')exit(0);
- if(select=='n'||select=='N')return;
-}
+
